@@ -1,0 +1,89 @@
+name: RDP Windows11 de mateus
+
+on:
+  workflow_dispatch:
+
+jobs:
+  rdp:
+    name: rdp
+    runs-on: windows-2025
+    timeout-minutes: 120
+
+    steps:
+
+      - name: Criar usuario RDP
+        shell: powershell
+        env:
+          RDP_USER: ${{ secrets.RDP_USER }}
+          RDP_PASSWORD: ${{ secrets.RDP_PASSWORD }}
+        run: |
+          $securePassword = ConvertTo-SecureString `
+            $env:RDP_PASSWORD `
+            -AsPlainText `
+            -Force
+
+          $user = Get-LocalUser `
+            -Name $env:RDP_USER `
+            -ErrorAction SilentlyContinue
+
+          if (-not $user) {
+            New-LocalUser `
+              -Name $env:RDP_USER `
+              -Password $securePassword `
+              -PasswordNeverExpires `
+              -UserMayNotChangePassword
+          } else {
+            Set-LocalUser `
+              -Name $env:RDP_USER `
+              -Password $securePassword
+          }
+
+          Add-LocalGroupMember `
+            -Group "Remote Desktop Users" `
+            -Member $env:RDP_USER `
+            -ErrorAction SilentlyContinue
+
+      - name: Ativar RDP
+        shell: powershell
+        run: |
+          Set-ItemProperty `
+            -Path "HKLM:\SYSTEM\CurrentControlSet\Control\Terminal Server" `
+            -Name "fDenyTSConnections" `
+            -Value 0
+
+          Set-Service `
+            -Name TermService `
+            -StartupType Automatic
+
+          Start-Service TermService
+
+          Enable-NetFirewallRule `
+            -DisplayGroup "Remote Desktop"
+
+      - name: Instalar Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
+
+      - name: Mostrar IP
+        shell: powershell
+        env:
+          RDP_USER: ${{ secrets.RDP_USER }}
+        run: |
+          $ip = & "C:\Program Files\Tailscale\tailscale.exe" ip -4
+
+          Write-Host ""
+          Write-Host "=============================="
+          Write-Host "       ACESSO RDP"
+          Write-Host "=============================="
+          Write-Host "IP: $ip"
+          Write-Host "Usuario: $env:RDP_USER"
+          Write-Host "Senha: use o valor de RDP_PASSWORD"
+          Write-Host "=============================="
+          Write-Host ""
+
+      - name: Manter ligado
+        shell: powershell
+        run: |
+          Write-Host "Runner mantido ativo."
+          Start-Sleep -Seconds 7200
