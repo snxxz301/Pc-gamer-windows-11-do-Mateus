@@ -1,0 +1,37 @@
+name: Windows RDP com Login Manual
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+    - name: Baixar e Instalar o Tailscale
+      run: |
+        powershell -Command "Invoke-WebRequest -Uri 'https://tailscale.com' -OutFile 'tailscale.msi'"
+        msiexec.exe /i tailscale.msi /quiet /norestart
+      shell: cmd
+
+    - name: Aguardar o Serviço do Tailscale Inicializar
+      run: |
+        powershell -Command "Start-Sleep -Seconds 5"
+
+    - name: Exibir Link de Login do Tailscale
+      run: |
+        echo "=========================================================="
+        echo "CLIQUE NO LINK ABAIXO PARA FAZER LOGIN NO TAILSCALE:"
+        echo "=========================================================="
+        "C:\Program Files\Tailscale\tailscale.exe" up
+      shell: cmd
+
+    - name: Configurar Usuário e Liberar RDP
+      run: |
+        net user runneradmin SenhaSegura123!
+        reg add "HKLM\System\CurrentControlSet\Control\Terminal Server" /v fDenyTSConnections /t REG_DWORD /d 0 /f
+        netsh advfirewall firewall set rule group="remote desktop" new enable=Yes
+      shell: cmd
+
+    - name: Manter a Máquina Ativa (6 Horas)
+      run: |
+        powershell -Command "Start-Sleep -Seconds 21600"
