@@ -1,0 +1,41 @@
+name: Windows 11 - Testes
+
+on:
+  workflow_dispatch:
+  push:
+
+jobs:
+  test:
+    runs-on: windows-2025
+
+    steps:
+      - name: Baixar código
+        uses: actions/checkout@v4
+
+      - name: Mostrar versão do Windows
+        shell: pwsh
+        run: |
+          Get-ComputerInfo |
+            Select-Object WindowsProductName, WindowsVersion, OsBuildNumber
+
+      - name: Configurar ambiente
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\test-data"
+          Write-Host "Ambiente de testes configurado."
+
+      - name: Executar testes
+        shell: pwsh
+        run: |
+          # Coloque aqui os comandos do seu projeto
+          # Exemplo:
+          # npm install
+          # npm test
+
+      - name: Coletar arquivos de teste
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-windows
+          path: test-data/
+          if-no-files-found: ignore
