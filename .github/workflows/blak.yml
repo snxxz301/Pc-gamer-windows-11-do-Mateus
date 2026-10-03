@@ -1,0 +1,48 @@
+name: Testes Windows 11
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: windows-2025
+
+    steps:
+      - name: Baixar projeto
+        uses: actions/checkout@v4
+
+      - name: Verificar Windows
+        shell: pwsh
+        run: |
+          Get-ComputerInfo |
+            Select-Object WindowsProductName, WindowsVersion, OsBuildNumber
+
+      - name: Instalar dependências
+        shell: pwsh
+        run: |
+          # Coloque aqui as dependências da sua aplicação
+          Write-Host "Preparando ambiente..."
+
+      - name: Executar aplicação
+        shell: pwsh
+        run: |
+          # Exemplo:
+          # Start-Process ".\MinhaAplicacao.exe"
+          Write-Host "Iniciando testes..."
+
+      - name: Executar testes
+        shell: pwsh
+        run: |
+          # Coloque seus testes aqui
+          # pytest tests/
+          Write-Host "Testes concluídos."
+
+      - name: Salvar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados
+          path: |
+            test-results/
+            screenshots/
+          if-no-files-found: ignore
